@@ -1,5 +1,3 @@
-# -
-行事曆
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -327,7 +325,8 @@
         const now = new Date();
         const futureEvents = data
             .map(e => ({ ...e, time: new Date(e.date) }))
-            .filter(e => e.time > now);
+            // ⭐ 延遲 1 分鐘才淘汰：篩選出「未來」或「剛結束不到 1 分鐘 (60000毫秒)」的考試
+            .filter(e => e.time.getTime() + 60000 > now.getTime());
 
         if (futureEvents.length === 0) return null;
 
@@ -365,12 +364,19 @@
             const diff = target - now;
 
             if (diff <= 0) {
+                // ⭐ 如果已經超過結束時間 1 分鐘 (60000毫秒)，就自動尋找並切換下一個考試
+                if (now.getTime() - target.getTime() >= 60000) {
+                    startCountdown(); 
+                    return;
+                }
+
+                // ⭐ 否則 (剛結束的 1 分鐘內)，顯示時間到與翻轉狀態
                 document.getElementById("countdown").innerText = "考試時間到！";
                 topSand.style.height = "0%";
                 bottomSand.style.height = "50%"; // 下方全滿
                 hourglass.classList.remove('active'); // 停止落沙
                 hourglass.classList.add('finished'); // 啟動時間到翻轉動畫
-                clearInterval(countdownTimer);
+                // 注意這裡移除了 clearInterval，讓計時器繼續跑，等待滿 1 分鐘
                 return;
             }
 
